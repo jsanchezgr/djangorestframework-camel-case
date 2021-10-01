@@ -5,13 +5,14 @@ from django.conf import settings
 from django.http import QueryDict
 from django.utils.functional import lazy
 
+from rest_framework.utils.serializer_helpers import ReturnDict
+
 from djangorestframework_camel_case.util import camelize, underscoreize
 
 settings.configure()
 
 
 class ImportTest(TestCase):
-
     def test_import_all(self):
         """
         A quick test that just imports everything, should crash in case any Django or DRF modules change
@@ -35,7 +36,8 @@ class UnderscoreToCamelTestCase(TestCase):
             "b_only_one_letter": 5,
             "only_c_letter": 6,
             "mix_123123a_and_letters": 7,
-            "no_underscore_before123": 8,
+            "mix_123123aa_and_letters_complex": 8,
+            "no_underscore_before123": 9,
         }
         output = {
             "twoWord": 1,
@@ -45,7 +47,8 @@ class UnderscoreToCamelTestCase(TestCase):
             "bOnlyOneLetter": 5,
             "onlyCLetter": 6,
             "mix123123aAndLetters": 7,
-            "noUnderscoreBefore123": 8,
+            "mix123123aaAndLettersComplex": 8,
+            "noUnderscoreBefore123": 9,
         }
         self.assertEqual(camelize(data), output)
 
@@ -60,6 +63,20 @@ class UnderscoreToCamelTestCase(TestCase):
         camelize(data)
         self.assertEqual(data, reference_input)
 
+    def test_recursive_with_ignored_keys(self):
+        ignore_fields = ("ignore_me", "newKey")
+        data = {
+            "ignore_me": {"no_change_recursive": 1},
+            "change_me": {"change_recursive": 2},
+            "new_key": {"also_no_change": 3},
+        }
+        output = {
+            "ignoreMe": {"no_change_recursive": 1},
+            "changeMe": {"changeRecursive": 2},
+            "newKey": {"also_no_change": 3},
+        }
+        self.assertEqual(camelize(data, ignore_fields=ignore_fields), output)
+
 
 class CamelToUnderscoreTestCase(TestCase):
     def test_camel_to_under_keys(self):
@@ -71,6 +88,13 @@ class CamelToUnderscoreTestCase(TestCase):
             "bOnlyOneLetter": 5,
             "onlyCLetter": 6,
             "mix123123aAndLetters": 7,
+            "mix123123aaAndLettersComplex": 8,
+            "wordWITHCaps": 9,
+            "key10": 10,
+            "anotherKey1": 11,
+            "anotherKey10": 12,
+            "optionS1": 13,
+            "optionS10": 14,
         }
         output = {
             "two_word": 1,
@@ -80,6 +104,13 @@ class CamelToUnderscoreTestCase(TestCase):
             "b_only_one_letter": 5,
             "only_c_letter": 6,
             "mix_123123a_and_letters": 7,
+            "mix_123123aa_and_letters_complex": 8,
+            "word_with_caps": 9,
+            "key_10": 10,
+            "another_key_1": 11,
+            "another_key_10": 12,
+            "option_s_1": 13,
+            "option_s_10": 14,
         }
         self.assertEqual(underscoreize(data), output)
 
@@ -94,6 +125,20 @@ class CamelToUnderscoreTestCase(TestCase):
         reference_input = deepcopy(data)
         underscoreize(data)
         self.assertEqual(data, reference_input)
+
+    def test_recursive_with_ignored_keys(self):
+        ignore_fields = ("ignore_me", "newKey")
+        data = {
+            "ignoreMe": {"noChangeRecursive": 1},
+            "changeMe": {"changeRecursive": 2},
+            "newKey": {"alsoNoChange": 3},
+        }
+        output = {
+            "ignore_me": {"noChangeRecursive": 1},
+            "change_me": {"change_recursive": 2},
+            "new_key": {"alsoNoChange": 3},
+        }
+        self.assertEqual(underscoreize(data, ignore_fields=ignore_fields), output)
 
 
 class NonStringKeyTest(TestCase):
@@ -113,9 +158,17 @@ class PromiseStringTest(TestCase):
     def test_promise_strings(self):
         data = {lazy_func("test_key"): lazy_func("test_value value")}
         camelized = camelize(data)
-        self.assertEquals(camelized, {"testKey": "test_value value"})
+        self.assertEqual(camelized, {"testKey": "test_value value"})
         result = underscoreize(camelized)
         self.assertEqual(result, {"test_key": "test_value value"})
+
+
+class ReturnDictTest(TestCase):
+    def test_return_dict(self):
+        data = ReturnDict({"id": 3, "value": "val"}, serializer=object())
+        camelized = camelize(data)
+        self.assertEqual(data, camelized)
+        self.assertEqual(data.serializer, camelized.serializer)
 
 
 class GeneratorAsInputTestCase(TestCase):
@@ -149,6 +202,13 @@ class CamelToUnderscoreQueryDictTestCase(TestCase):
             "bOnlyOneLetter": 5,
             "onlyCLetter": 6,
             "mix123123aAndLetters": 7,
+            "mix123123aaAndLettersComplex": 8,
+            "wordWITHCaps": 9,
+            "key10": 10,
+            "anotherKey1": 11,
+            "anotherKey10": 12,
+            "optionS1": 13,
+            "optionS10": 14,
         }
         query_dict.update(data)
 
@@ -162,6 +222,13 @@ class CamelToUnderscoreQueryDictTestCase(TestCase):
             "b_only_one_letter": 5,
             "only_c_letter": 6,
             "mix_123123a_and_letters": 7,
+            "mix_123123aa_and_letters_complex": 8,
+            "word_with_caps": 9,
+            "key_10": 10,
+            "another_key_1": 11,
+            "another_key_10": 12,
+            "option_s_1": 13,
+            "option_s_10": 14,
         }
         output_query.update(output)
         self.assertEqual(underscoreize(query_dict), output_query)

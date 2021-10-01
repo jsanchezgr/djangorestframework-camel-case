@@ -14,13 +14,15 @@ from djangorestframework_camel_case.util import underscoreize
 
 
 class CamelCaseJSONParser(api_settings.PARSER_CLASS):
+    json_underscoreize = api_settings.JSON_UNDERSCOREIZE
+
     def parse(self, stream, media_type=None, parser_context=None):
         parser_context = parser_context or {}
         encoding = parser_context.get("encoding", settings.DEFAULT_CHARSET)
 
         try:
             data = stream.read().decode(encoding)
-            return underscoreize(json.loads(data), **api_settings.JSON_UNDERSCOREIZE)
+            return underscoreize(json.loads(data), **self.json_underscoreize)
         except ValueError as exc:
             raise ParseError("JSON parse error - %s" % str(exc))
 
@@ -33,7 +35,7 @@ class CamelCaseFormParser(FormParser):
     def parse(self, stream, media_type=None, parser_context=None):
         return underscoreize(
             super().parse(stream, media_type, parser_context),
-            **api_settings.JSON_UNDERSCOREIZE
+            **api_settings.JSON_UNDERSCOREIZE,
         )
 
 
