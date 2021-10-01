@@ -10,4 +10,4 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+So many contributors added code, but we prefer to maintain them anonymous
